@@ -5,7 +5,7 @@ let usage = "Usage : ./aritha expression.exp"
 let compile_exp exp file =
   let liste_lex = Lexer.analyse_lex exp in
   let arbre = Parserparla.parserparla liste_lex in
-  Proj1.final file arbre
+  Proj1.compile file arbre
 
 let _ =
   if Array.length Sys.argv <= 1 then print_endline usage
