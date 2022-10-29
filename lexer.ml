@@ -38,18 +38,38 @@ let test_gen str_mot str_nb typ signe lexl =
         lexl := Int(int_of_string(!str_nb)) :: !lexl;
     str_nb := ""
   end
+
   
 
 
-let analyse_lex s =
-  let n = String.length s in
+let analyse_lex u =
+  let n = String.length u in
   let lexl = ref [] in (*liste de lexemes (enregistrée à l'envers, on la retourne à la fin)*)
   let en_cours_mot = ref "" in
   let en_cours_nombre = ref "" in
   let signe = ref false in (*true si le nombre actuel est négatif*)
   let type_nb = ref false in (*true si le nombre actuel est flottant*)
   let compteur_op = ref 0 in (*incrémenté si on croise une opération*)
-  for i = 0 to (n-2) do
+
+  (*on parcourt le tableau pour enlever tous les espaces*)
+  let t = ref "" in
+  for i = 0 to (n-1) do
+    match u.[i] with
+    |'(' -> t := !t ^ "("
+    |')' -> t := !t ^ ")"
+    |'+' -> t := !t ^ "+"
+    |'-' -> t := !t ^ "-"
+    |'*' -> t := !t ^ "*"
+    |'.' -> t := !t ^ "."
+    |'%' -> t := !t ^ "%" 
+    |'/' -> t := !t ^ "/"
+    |' ' -> ()
+    |x -> t := !t ^ (String.make 1 u.[i])
+  done;
+  let s = !t in
+  let m = String.length s in
+
+  for i = 0 to (m-2) do
     match s.[i] with
       |'(' ->
         if !en_cours_mot = "int" then lexl := LBRACE :: INT :: !lexl
@@ -70,56 +90,76 @@ let analyse_lex s =
         signe := false ;
         type_nb := false
       |'+' ->
-	      (*if !compteur_op > 1 then failwith"plus de deux opérations à la suite"
-	      else if !compteur_op = 1 then begin
-	        if s.[i+1] <> '(' then failwith"deux opérations à la suite"
-	        else lexl := PLUS :: !lexl
-        end
-	      else begin
-          if (i=0 && s.[i+1] = '(') then
-            lexl := PLUS :: !lexl
-          else begin
-	          test_gen en_cours_mot en_cours_nombre type_nb signe lexl;
-            compteur_op := !compteur_op + 1;
-	          if s.[i+1] = '.' then lexl := ADDF :: !lexl (*teste si c'est une opération flottante*)
-            else lexl := ADD :: !lexl
+          if i = 0 then begin
+            let x = s.[i+1] in
+            (*si c'est un - d'opposé' d'un nombre*)
+            if (('0' <= x && x <= '9')) then ()
+            (*si c'est un -(exp)*)
+            else if x = '(' then lexl := PLUS :: !lexl
+            else failwith"syntaxe !"
           end
-	      end;
-        signe := false ;
-        type_nb := false*)
-
-        if !compteur_op > 1 then failwith"plus de deux opérations à la suite"
-	      else if !compteur_op = 1 then begin (*on vient de voir une opération*)
-          (*teste si c'est un - de négation d'un nombre*)
-          if '0' <= s.[i+1] && s.[i+1] <= '9' then 
-            lexl := PLUS :: !lexl
-          (*teste si c'est un + d'une expression*)
-          else 
-	          if s.[i+1] <> '(' then failwith"deux opérations à la suite" 
-	          else lexl := PLUS :: !lexl
-        end
-	      else begin 
-          (*teste si c'est un + de nombre*)
-          if (i = 0 && '0' <= s.[i+1] && s.[i+1] <= '9') then ()
+          else if !compteur_op > 1 then failwith"plus de deux opérations à la suite"
           else begin
-            (*si c'est un + d'une expression*)
-            if s.[i+1] = '(' then lexl := PLUS :: !lexl
-            (*sinon c'est une soustraction classique*)
-            else begin
-	            test_gen en_cours_mot en_cours_nombre type_nb signe lexl;
-	            if s.[i+1] = '.' then begin
-                compteur_op := !compteur_op + 1;
-                lexl := ADDF :: !lexl (*si c'est une opération flottante*)
-              end 
+            let y = s.[i-1] in
+            let x = s.[i+1] in
+            (*si c'est un + précédant un nombre*)
+            if (('0' <= x && x <= '9')) then begin
+                if (y = ')') then begin (*c'est forcément un ADD ou ADDF*)
+                  compteur_op := !compteur_op + 1;
+                  if s.[i+1] = '.' then 
+                    lexl := ADDF :: !lexl (*si c'est une opération flottante*)
+                  else 
+                    lexl := ADD :: !lexl
+                end
+                else if (!en_cours_nombre <> "") then begin (*c'est forcément un ADD ou ADDF et on enregistre le nombre précédent*)
+                  test_gen en_cours_mot en_cours_nombre type_nb signe lexl;
+                  compteur_op := !compteur_op + 1;
+                  if s.[i+1] = '.' then 
+                    lexl := ADDF :: !lexl (*si c'est une opération flottante*)
+                  else 
+                    lexl := ADD :: !lexl
+                end
+                else ()
+            end
+            (*si c'est un ...+(exp)*)
+            else if x = '(' then begin
+              if !signe then failwith"deux fois moins"
               else begin
+                if (y = ')') then begin (*c'est forcément un ADD ou ADDF*)
+                  compteur_op := !compteur_op + 1;
+                  if s.[i+1] = '.' then 
+                    lexl := ADDF :: !lexl (*si c'est une opération flottante*)
+                  else 
+                    lexl := ADD :: !lexl
+                end
+                else if (!en_cours_nombre <> "") then begin (*c'est forcément un ADD ou ADDF et on enregistre le nombre précédent*)
+                  test_gen en_cours_mot en_cours_nombre type_nb signe lexl;
+                  compteur_op := !compteur_op + 1;
+                  if s.[i+1] = '.' then 
+                    lexl := ADDF :: !lexl (*si c'est une opération flottante*)
+                  else  
+                    lexl := ADD :: !lexl
+                end
+                else lexl := PLUS :: !lexl
+              end
+            end
+            (*sinon on regarde s'il n'y a pas une erreur de syntaxe*)
+            else begin
+              if !compteur_op = 1 then failwith"deux opérations !"
+              (*s'il n'y en a pas on ajoute l'opération*)
+              else begin
+                test_gen en_cours_mot en_cours_nombre type_nb signe lexl;
                 compteur_op := !compteur_op + 1;
-                lexl := ADD :: !lexl
-              end 
+                if s.[i+1] = '.' then 
+                  lexl := ADDF :: !lexl (*si c'est une opération flottante*)
+                else 
+                  lexl := ADD :: !lexl
               end
             end
           end;
           signe := false ;
           type_nb := false
+
 
       |'*' ->
 	      if !compteur_op <> 0 then failwith"deux opérations à la suite"
@@ -132,39 +172,76 @@ let analyse_lex s =
         signe := false ;
         type_nb := false
       |'-' ->
-	      if !compteur_op > 1 then failwith"plus de deux opérations à la suite"
-	      else if !compteur_op = 1 then begin (*on vient de voir une opération*)
-          (*teste si c'est un - de négation d'un nombre*)
-          if '0' <= s.[i+1] && s.[i+1] <= '9' then
-            if !signe then failwith"deux fois moins"
-            else signe := true
-          (*teste si c'est un moins de négation d'une expression*)
-          else 
-	          if s.[i+1] <> '(' then failwith"deux opérations à la suite" 
-	          else lexl := MINUS :: !lexl
+        if i = 0 then begin
+          let x = s.[i+1] in
+          (*si c'est un - d'opposé' d'un nombre*)
+          if (('0' <= x && x <= '9')) then signe := true
+          (*si c'est un -(exp)*)
+          else if x = '(' then lexl := MINUS :: !lexl
+          else failwith"syntaxe !"
         end
-	      else begin 
-          (*teste si c'est une négation de nombre*)
-          if (i = 0 && '0' <= s.[i+1] && s.[i+1] <= '9') then
+        else if !compteur_op > 1 then failwith"plus de deux opérations à la suite"
+	      else begin
+          let y = s.[i-1] in
+          let x = s.[i+1] in
+          (*si c'est un - précédant un nombre*)
+          if (('0' <= x && x <= '9')) then begin
             if !signe then failwith"deux fois moins"
-            else signe := true
-          else begin
-            (*si c'est la négation d'une expression*)
-            if s.[i+1] = '(' then lexl := MINUS :: !lexl
-            (*sinon c'est une soustraction classique*)
             else begin
-	            test_gen en_cours_mot en_cours_nombre type_nb signe lexl;
-	            if s.[i+1] = '.' then begin
-              compteur_op := !compteur_op + 1;
-                lexl := SUBF :: !lexl (*si c'est une opération flottante*)
-              end
-              else begin
+              if (y = ')') then begin (*c'est forcément un SUB ou SUBF*)
                 compteur_op := !compteur_op + 1;
-                lexl := SUB :: !lexl
-              end 
+                if s.[i+1] = '.' then 
+                  lexl := SUBF :: !lexl (*si c'est une opération flottante*)
+                else 
+                  lexl := SUB :: !lexl
               end
+              else if (!en_cours_nombre <> "") then begin (*c'est forcément un SUB ou SUBF et on enregistre le nombre précédent*)
+                test_gen en_cours_mot en_cours_nombre type_nb signe lexl;
+                compteur_op := !compteur_op + 1;
+                if s.[i+1] = '.' then 
+                  lexl := SUBF :: !lexl (*si c'est une opération flottante*)
+                else 
+                  lexl := SUB :: !lexl
+              end
+              else signe := true
             end
-          end;
+          end
+          (*si c'est un -(exp)*)
+          else if x = '(' then begin
+            if !signe then failwith"deux fois moins"
+            else begin
+              if (y = ')') then begin (*c'est forcément un SUB ou SUBF*)
+                compteur_op := !compteur_op + 1;
+                if s.[i+1] = '.' then 
+                  lexl := SUBF :: !lexl (*si c'est une opération flottante*)
+                else 
+                  lexl := SUB :: !lexl
+              end
+              else if (!en_cours_nombre <> "") then begin (*c'est forcément un SUB ou SUBF et on enregistre le nombre précédent*)
+                test_gen en_cours_mot en_cours_nombre type_nb signe lexl;
+                compteur_op := !compteur_op + 1;
+                if s.[i+1] = '.' then 
+                  lexl := SUBF :: !lexl (*si c'est une opération flottante*)
+                else  
+                  lexl := SUB :: !lexl
+              end
+              else lexl := MINUS :: !lexl
+            end
+          end
+          (*sinon on regarde s'il n'y a pas une erreur de syntaxe*)
+          else begin
+            if !compteur_op = 1 then failwith"deux opérations !"
+            (*s'il n'y en a pas on ajoute l'opération*)
+            else begin
+              test_gen en_cours_mot en_cours_nombre type_nb signe lexl;
+              compteur_op := !compteur_op + 1;
+	            if s.[i+1] = '.' then 
+                lexl := SUBF :: !lexl (*si c'est une opération flottante*)
+              else 
+                lexl := SUB :: !lexl
+            end
+          end
+        end;
         type_nb := false 
       |'/' ->
 	      if !compteur_op <> 0 then failwith"deux opérations à la suite"
@@ -183,16 +260,6 @@ let analyse_lex s =
 	        lexl := MOD :: !lexl
 	      end;
         signe := false 
-      |' ' ->
-        if !en_cours_mot = "int" then
-          lexl := INT :: !lexl
-        else if !en_cours_mot = "float" then
-          lexl := FLOAT :: !lexl
-	      else test_gen en_cours_mot en_cours_nombre type_nb signe lexl;
-        en_cours_mot := "";
-        en_cours_nombre := "";
-        signe := false;
-        type_nb := false 
       |'.' ->
         if i = 0 then begin (*le premier nombre est flottant < 1*)
           let x = s.[i+1] in
@@ -203,7 +270,7 @@ let analyse_lex s =
           else failwith"erreur synt"
         end
       else if (s.[i-1] = '+' || s.[i-1] = '-' || s.[i-1] = '*') then () (*on a déjà compté que c'est une opération flottante*)
-      else begin (*le point indique un nombre flottant ou c'est une erreur*)
+      else begin (*le point indique un nombre flottant, ou c'est une erreur*)
 	      if !type_nb then failwith"deux points !!!" (*on est actuellement dans un nombre et on a croisé le point flottant -> point en trop*)
 	      else if !compteur_op <> 0 then begin (*on vient de voir une opération*)
           let x = s.[i+1] in
@@ -233,13 +300,11 @@ let analyse_lex s =
           en_cours_mot := !en_cours_mot ^ (String.make 1 s.[i])
   done;
   begin
-  match s.[n-1] with (*On regarde le cas particulier du dernier élément pour le traiter différemment*)
+  match s.[m-1] with (*On regarde le cas particulier du dernier élément pour le traiter différemment*)
     |'(' -> failwith"finit par une parenthèse ouvrante"
     |')' ->
       test_gen en_cours_mot en_cours_nombre type_nb signe lexl;
       lexl := RBRACE :: !lexl
-    |' ' ->
-      test_gen en_cours_mot en_cours_nombre type_nb signe lexl;
     |'.' ->
       if !type_nb then failwith"deux points !!!"
       else if !en_cours_nombre <> "" then  begin
@@ -250,10 +315,9 @@ let analyse_lex s =
       else failwith"mauvaise syntaxe"
     |x ->
       if '0' <= x && x <= '9' then begin
-        en_cours_nombre := !en_cours_nombre ^ (String.make 1 s.[n-1]);
+        en_cours_nombre := !en_cours_nombre ^ (String.make 1 s.[m-1]);
 	      test_gen en_cours_mot en_cours_nombre type_nb signe lexl
       end
       else failwith"mauvaise syntaxe"
   end;
   List.rev !lexl
-
