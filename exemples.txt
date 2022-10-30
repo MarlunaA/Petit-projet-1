@@ -1,0 +1,21 @@
+6--3
+
+32-5*(61%7/2)
+
+int(float(int(5.)))
+
+-(45%6+ float(-int(6.+..3))) -> erreur (mauvais typage)
+
+-(45%6+ (-int(6.+..3)))
+
+-5. +..3
+
+6..3 +. .4 -> erreur (deux points à la suite)
+
+6..3 +. (.4)) -> erreur (mauvais parenthésage)
+
+int(float(+(-(14%3))))/3
+
+-(float(56%3 +4*2)*.3.)+.(46.)
+
+1+2*3

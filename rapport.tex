@@ -37,20 +37,19 @@ Compilation d'expressions arithmétiques}
 
 \begin{section}{Lexer}
 
-L'analyseur syntaxique transforme l'expression lue (chaîne de caractères) en une liste de lexemes.
-On profite aussi de cette étape pour soulever des erreurs de lexique : des mélanges de lettres et nombres non séparés par des espaces ou des opérations, des mots qui ne sont pas dans notre langage (c'est à dire différents de "int" ou "float"), des points trop nombreux, etc.
+J'utilise ocamllex pour générer la suite de lexemes (mes tentatives pour le faire à la main ont été infrucuteuses car j'essayais trop de traiter les cas particuliers).
 
 \end{section}
 
 \begin{section}{Parser}
 
-Le parser transforme ensuite la suite de lexemes générée par le lexer en un arbre (type exp) correspondant à l'arbre des opérations.
+J'utilise aussi ocamlyacc pour le parser (pour les mêmes raisons)
 
 \vspace{0.2 cm}
 
-Dans le principe : 
+Sinon voici le principe de ce que j'avais prévu (les anciennes versions sont disponibles dans l'historique github) : 
 
-On fait un appel récursif sur la liste avec un deuxième argument (appelé "gauche") qui garde en mémoire l'arbre de la partie déjà vue de la liste. 
+On fait un appel récursif sur la liste de lexemes avec un deuxième argument (appelé "gauche") qui garde en mémoire l'arbre de la partie déjà vue de la liste (et un troisième qui compte les parenthèses). 
 Lorsque l'on croise une opération op, gauche devient le sous-arbre gauche, et il reste à calculer le sous-arbre droit puis à continuer. 
 Ceci est fait par la fonction récursive parcourt\_droite qui renvoie un couple : 
 l'arbre droit et le reste de la liste, où l'arbre droit correspond au bloc d'expressions qui est composé de blocs de parenthèses séparés par des * ou des mod ou quot, 
@@ -68,9 +67,9 @@ Enfin, avant de renvoyer l'arbre, on le parcourt pour vérifier le typage de l'e
 On parcourt l'arbre généré par le parser, et lorsque l'on arrive sur une opération, on appelle la fonction récursivement sur chaque sous-arbre et on applique l'opération sur le résultat.
 
 Pour gérer les enregistrements, on utilise la pile : dans les fonctions opération, on pop les résultats des deux précédents appels (parcourt e1 et parcourt e2), puis on push le résultat de l'opération. 
-Comme les flottants ne peuvent pas être push ou pop sur la pile, on incrémente le pointeur de la pile (rsp) avant de déplacer le flottant à cet endroit (i.e. on l'ajoute "à la main" en haut de la pile), et inversement lorsqu'on dépile.
+Comme les flottants ne peuvent pas être push ou pop sur la pile, on décrémente le pointeur de la pile (rsp) avant de déplacer le flottant à cet endroit (i.e. on l'ajoute "à la main" en haut de la pile), et inversement lorsqu'on dépile.
 
-Pour traiter les flottants, on modifie la librairie x86_64 
+Pour traiter les flottants, on modifie la librairie x86\_64 pour ajouter les opérations flottantes.
 
 \end{section}
 

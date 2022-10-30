@@ -1,8 +1,6 @@
-open Parserparla
+open Ast
 open X86_64
 open Format
-
-
 
 
 (*Fonctions appelées lors du parcourt de l'arbre*)
@@ -134,7 +132,6 @@ let compile name exp =
       |Minus(e1) ->
 	      if bon_type e1 = 0 then parcourt e1 ++ operation_unaire negq
 	      else parcourt e1 ++ moins_unairef
-      |Plus(e1) -> parcourt e1
       |Mod(e1, e2) -> parcourt e1 ++ parcourt e2 ++ modulo
       |Quot(e1, e2) -> parcourt e1 ++ parcourt e2 ++ quotient
       |Cint(e1) -> parcourt e1 ++ float_to_int

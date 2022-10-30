@@ -1,5 +1,5 @@
 open X86_64
-open Parserparla
+open Ast
 
 val write : string -> program -> unit
 
