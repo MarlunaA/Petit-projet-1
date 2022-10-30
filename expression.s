@@ -32,6 +32,6 @@ main:
 S_float:
 	.string "%f\n"
 .F0:
-  .double 0.3
+  .double 3.
 .F1:
   .double 5.

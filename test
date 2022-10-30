@@ -1,0 +1,3 @@
+./aritha expression.exp
+gcc -no-pie -o expression expression.s
+./expression

@@ -159,8 +159,6 @@ let analyse_lex u =
           end;
           signe := false ;
           type_nb := false
-
-
       |'*' ->
 	      if !compteur_op <> 0 then failwith"deux opérations à la suite"
 	      else begin
@@ -259,7 +257,8 @@ let analyse_lex u =
 	        test_gen en_cours_mot en_cours_nombre type_nb signe lexl;
 	        lexl := MOD :: !lexl
 	      end;
-        signe := false 
+        signe := false;
+        type_nb := false
       |'.' ->
         if i = 0 then begin (*le premier nombre est flottant < 1*)
           let x = s.[i+1] in
